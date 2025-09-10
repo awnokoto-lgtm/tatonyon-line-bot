@@ -1,33 +1,35 @@
-from fastapi import FastAPI, Request
-from linebot import LineBotApi, WebhookHandler
-from linebot.models import MessageEvent, TextMessage, TextSendMessage
+from fastapi import FastAPI, Request, HTTPException
 import os
+from linebot import LineBotApi, WebhookHandler
+from linebot.exceptions import InvalidSignatureError
+from linebot.models import MessageEvent, TextMessage, TextSendMessage
 
 app = FastAPI()
 
-# ดึงค่าจาก Environment Variables
-line_bot_api = LineBotApi(os.getenv("LINE_CHANNEL_TOKEN"))
-handler = WebhookHandler(os.getenv("LINE_CHANNEL_SECRET"))
+# ใช้ ENV จาก Vercel
+LINE_CHANNEL_ACCESS_TOKEN = os.getenv("LINE_CHANNEL_TOKEN")
+LINE_CHANNEL_SECRET = os.getenv("LINE_CHANNEL_SECRET")
+
+line_bot_api = LineBotApi(LINE_CHANNEL_ACCESS_TOKEN)
+handler = WebhookHandler(LINE_CHANNEL_SECRET)
 
 @app.get("/")
-def home():
-    return {"status": "ok"}
+async def root():
+    return {"status": "ok", "message": "LINE Bot is running!"}
 
 @app.post("/webhook")
 async def webhook(request: Request):
+    signature = request.headers.get("x-line-signature")
     body = await request.body()
-    signature = request.headers.get("X-Line-Signature")
-
     try:
         handler.handle(body.decode("utf-8"), signature)
-    except Exception as e:
-        print("Error:", e)
-
+    except InvalidSignatureError:
+        raise HTTPException(status_code=400, detail="Invalid signature")
     return "OK"
 
 @handler.add(MessageEvent, message=TextMessage)
 def handle_message(event):
-    # ส่งข้อความตอบกลับ
+    # ตอบกลับข้อความเดิม
     line_bot_api.reply_message(
         event.reply_token,
         TextSendMessage(text=f"คุณพิมพ์ว่า: {event.message.text}")
