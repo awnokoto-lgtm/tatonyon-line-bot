@@ -5,7 +5,8 @@ from fastapi.responses import JSONResponse, Response
 from linebot import LineBotApi, WebhookParser
 from linebot.models import (
     MessageEvent, TextMessage, TextSendMessage,
-    QuickReply, QuickReplyButton, MessageAction
+    QuickReply, QuickReplyButton, MessageAction,
+    FlexSendMessage
 )
 
 # ====== ENV ======
